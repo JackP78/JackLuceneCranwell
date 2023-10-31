@@ -1,5 +1,6 @@
 package ie.tcd.jmcauliffe;
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import org.apache.lucene.analysis.Analyzer;
@@ -97,6 +98,7 @@ class QueryEngine {
     }
 
     public void SaveResultsFile() throws IOException {
+        Files.createDirectories(Paths.get(Main.RESULTS_DIRECTORY));
         String filePath = Main.RESULTS_DIRECTORY + this.similarityStrategy + ".test";
         System.out.println("Creating file " + filePath);
         File file = new File(filePath);
