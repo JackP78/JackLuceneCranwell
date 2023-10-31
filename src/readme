@@ -1,0 +1,10 @@
+the following commands need to be run to see results
+
+mvn clean package
+java -jar target/JackLuceneCranwell-1.0-SNAPSHOT.jar
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/StandardAnalyzerVSM.test
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/WhitespaceAnalyzerVSM.test
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/EnglishAnalyzerVSM.test
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/StandardAnalyzerBM25.test
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/WhitespaceAnalyzerBM25.test
+trec_eval -m runid -m map -m gm_map -m P.5 ./target/classes/cranqrel2 ./results/EnglishAnalyzerBM25.test
