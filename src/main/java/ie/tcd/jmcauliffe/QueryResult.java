@@ -2,9 +2,7 @@ package ie.tcd.jmcauliffe;
 
 public class QueryResult {
 
-    private int queryId;
 
-    private int docId;
 
     private int rank;
 
@@ -12,19 +10,24 @@ public class QueryResult {
 
     private String runName= "Standard";
 
-    public QueryResult(int queryId, int docId, int rank, float score, String runName) {
-        this.queryId = queryId;
-        this.docId = docId;
+    private int queryId;
+
+    private int documentId;
+
+    public QueryResult(int queryId, int documentId, int rank, float score, String runName) {
         this.rank = rank;
         this.score = score;
         this.runName = runName;
+        this.queryId = queryId;
+        this.documentId = documentId;
+
     }
 
     @Override
     public String toString() {
         return Integer.toString(queryId) + "\t"
                 + "Q0 \t"
-                + Integer.toString(docId) + "\t"
+                + Integer.toString(documentId) + "\t"
                 + Integer.toString(rank) + "\t"
                 + Float.toString(score) + "\t"
                 + runName;

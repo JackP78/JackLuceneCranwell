@@ -3,17 +3,18 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+
 
 class QueryEngine {
 
@@ -35,6 +36,20 @@ class QueryEngine {
         }
     }
 
+    public void SaveResultsFile() throws IOException {
+        Files.createDirectories(Paths.get(Main.RESULTS_DIRECTORY));
+        String filePath = Main.RESULTS_DIRECTORY + this.similarityStrategy + ".test";
+        System.out.println("Writing file " + filePath);
+
+        FileWriter fileWriter = new FileWriter(filePath);
+        PrintWriter printWriter = new PrintWriter(fileWriter);
+        for (QueryResult result: this.results) {
+            printWriter.println(result.toString());
+        }
+        printWriter.close();
+        fileWriter.close();
+    }
+
     public void ParseFile() throws IOException {
         // File opening Setup
         InputStream fstream = QueryEngine.class.getClassLoader().getResourceAsStream("cran.qry");
@@ -42,8 +57,8 @@ class QueryEngine {
         String currentLine;
 
         int queryNumber = 1;
-        String queryBody = "";
         boolean firstPass = true;
+        String queryBody = "";
 
         while ((currentLine = br.readLine()) != null) {
             if(currentLine.startsWith(".I")) {
@@ -69,8 +84,7 @@ class QueryEngine {
     }
 
     public void ExecuteQueries(Analyzer analyzer, Similarity similarity) throws IOException, ParseException {
-        // Open the folder that contains our search index
-		Directory directory = FSDirectory.open(Paths.get(Main.INDEX_DIRECTORY));
+        Directory directory = FSDirectory.open(Paths.get(Main.INDEX_DIRECTORY));
 		
 		DirectoryReader reader = DirectoryReader.open(directory);
 		IndexSearcher indexSearcher = new IndexSearcher(reader);
@@ -81,14 +95,14 @@ class QueryEngine {
 		QueryParser parser = new QueryParser("Body", analyzer);
 
         for (QueryItem thisQuery: this.queries) {
+            System.out.println("Query ID " + thisQuery.getId() + " parsed");
             String searchTerm = stripPunctuation(thisQuery.getBody());
             Query query = parser.parse(searchTerm);
             ScoreDoc[] hits = indexSearcher.search(query, 50).scoreDocs;
-            System.out.println("Query ID " + thisQuery.getId() + " parsed");
             for (int i = 0; i < hits.length; i++) {
                 Document hitDoc = indexSearcher.doc(hits[i].doc);
                 QueryResult searchResult = new QueryResult(thisQuery.getId(),
-                    Integer.valueOf(hitDoc.get("ID")), i+1, hits[i].score, this.similarityStrategy);
+                    Integer.parseInt(hitDoc.get("ID")), i+1, hits[i].score, this.similarityStrategy);
                 this.results.add(searchResult);
 		    }
         }
@@ -97,29 +111,9 @@ class QueryEngine {
 		directory.close();
     }
 
-    public void SaveResultsFile() throws IOException {
-        Files.createDirectories(Paths.get(Main.RESULTS_DIRECTORY));
-        String filePath = Main.RESULTS_DIRECTORY + this.similarityStrategy + ".test";
-        System.out.println("Creating file " + filePath);
-        File file = new File(filePath);
-
-        if (file.exists()) {
-            file.delete(); 
-        }
-        else {
-            file.createNewFile();
-        }
-
-        FileWriter fileWriter = new FileWriter(filePath);
-        PrintWriter printWriter = new PrintWriter(fileWriter);
-        for (QueryResult result: this.results) {
-            printWriter.println(result.toString());
-        }
-        printWriter.close();
-    }
-
-    public String stripPunctuation(String query) {
-        return query.replaceAll("\\?", "");
+    // get rid of those hasty question marks
+    private String stripPunctuation(String line) {
+        return line.replaceAll("\\?", "");
     }
 
 }

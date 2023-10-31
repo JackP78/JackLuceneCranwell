@@ -4,7 +4,11 @@ import java.util.ArrayList;
 
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -13,12 +17,11 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 
 public class Indexer
 {
 
+    // static map that maps the cranwell tags to the lucen field types
     public static final Map<String, String> fieldMap = new HashMap<>();
 
     static {
@@ -44,64 +47,66 @@ public class Indexer
         
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
         
-        IndexWriter iwriter = new IndexWriter(directory, config);
+        IndexWriter indexWriter = new IndexWriter(directory, config);
         
         // read input file from the jar, the cranfield is bundled with the jar as resource
-        InputStream fstream = Indexer.class.getClassLoader().getResourceAsStream("cran.all.1400");
-        BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+        InputStream fileStream = Indexer.class.getClassLoader().getResourceAsStream("cran.all.1400");
+        assert fileStream != null;
+        BufferedReader br = new BufferedReader(new InputStreamReader(fileStream));
         
-        String strLine;
-        String currentTag = "ID"; // Assumption document starts with ID
-        String previousTag = "";
-        String contentOfTag = "";
-        Boolean startNewContent = true;
-        Boolean firstIteration = true;
+        String currentLine;
 
-        // ArrayList of documents in the corpus
-		ArrayList<Document> documents = new ArrayList<Document>();
+        boolean newTagSeen = true;
+        boolean firstPass = true;
+
+        String currTag = "ID";
+        String prevTag = "";
+        String tagBody = "";
+
+        
+		List<Document> luceneDocs = new ArrayList<Document>();
         Document doc = new Document();
 
         //step through file line by line
-        while ((strLine = br.readLine()) != null)   {
-            if (strLine.startsWith(".")) {
-                previousTag = currentTag;
-                currentTag = fieldMap.get(strLine.substring(0,2));
-                if(!"ID".equals(previousTag)) {
-                    doc.add(new TextField(previousTag, contentOfTag, Field.Store.YES));
+        while ((currentLine = br.readLine()) != null)   {
+            if (currentLine.startsWith(".")) {
+                prevTag = currTag;
+                currTag = fieldMap.get(currentLine.substring(0,2));
+                if(!"ID".equals(prevTag)) {
+                    doc.add(new TextField(prevTag, tagBody, Field.Store.YES));
                 }
                 // hit a new id tag
-                if (strLine.startsWith(".I")) {
-                    String docId = strLine.substring(3);
-                    if (!firstIteration) {
-                        documents.add(doc);
+                if (currentLine.startsWith(".I")) {
+                    String documentId = currentLine.substring(3);
+                    if (!firstPass) {
+                        luceneDocs.add(doc);
                     }
-                    firstIteration = false;
+                    firstPass = false;
                     doc = new Document();
-                    doc.add(new StringField(currentTag, docId, Field.Store.YES));
-                    System.out.println("Document " + docId + " parsed");
+                    doc.add(new StringField(currTag, documentId, Field.Store.YES));
                 }
-                startNewContent = true;
+                newTagSeen = true;
             }
             else { // continuation of previous tag
-                if (startNewContent) {
-                    contentOfTag = strLine;
-                    startNewContent = false; 
+                if (newTagSeen) {
+                    tagBody = currentLine;
+                    newTagSeen = false;
                 }
                 else {
-                    contentOfTag = contentOfTag + "\n" + strLine;
+                    tagBody = tagBody + "\n" + currentLine;
                 }
             }
         }
 
-        doc.add(new TextField(currentTag, contentOfTag, Field.Store.YES));
-        documents.add(doc);
+        doc.add(new TextField(currTag, tagBody, Field.Store.YES));
+        luceneDocs.add(doc);
 
-        iwriter.addDocuments(documents);
+        indexWriter.addDocuments(luceneDocs);
 
         // close input streams
-        iwriter.close();
+        indexWriter.close();
         directory.close();
 
-        fstream.close();
+        fileStream.close();
     }
 }
