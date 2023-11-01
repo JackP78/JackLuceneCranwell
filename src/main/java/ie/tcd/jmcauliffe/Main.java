@@ -16,7 +16,7 @@ public class Main {
     public static String RESULTS_DIRECTORY = "results/";
 
 
-    private static void testCombination(Analyzer analyzer, Similarity similarity, String scoringApproach) {
+    static void testCombination(Analyzer analyzer, Similarity similarity, String scoringApproach) {
         System.out.println("Creating Index");
         Indexer createIndexes = new Indexer(analyzer);
         System.out.println("Running Queries");
